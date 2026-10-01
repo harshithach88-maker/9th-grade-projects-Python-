@@ -1,0 +1,38 @@
+Questions I'm confused on:
+1
+3
+5
+7
+Creative commons license- 
+redundant routing
+public-key encryption
+high-bandwidth connection
+11
+15
+16
+17
+20
+loss less compression
+Creative commons
+multi factor authentication
+phishing attack
+internet & world wide web relationship
+redundant routing
+analog signals- sampled digitally over time, as a sequence
+of bits
+creative commons license
+no- rights reserved
+data mining
+compression algorithms
+data mining
+decompressed data
+encryption algorithms
+bandwidth- max or min amount of data you can send
+public key encryption
+
+25, 52, 65, 55, 57, 63, 45
+Rogue access point - is wireless
+symmetric - use same key for encryption and decryption
+citizen science = in whole or part by distributed individuals
+many might not be scientists
+dividing list in half till we found just one
