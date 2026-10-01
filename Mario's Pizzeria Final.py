@@ -1,0 +1,412 @@
+import pygame
+import sys
+
+# Define the screen size
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
+
+# Initialize Pygame
+pygame.init()
+pygame.font.init()
+
+
+class Checkbox:
+    def __init__(self, surface, x, y, idnum, prices, color=(230, 230, 230),
+                 caption="", outline_color=(0, 0, 0), check_color=(0, 0, 0),
+                 font_size=22, font_color=(0, 0, 0),
+                 text_offset=(28, 1), font='Ariel Black'):
+        self.surface = surface
+        self.x = x
+        self.y = y
+        self.color = color
+        self.caption = caption
+        self.oc = outline_color
+        self.cc = check_color
+        self.fs = font_size
+        self.fc = font_color
+        self.to = text_offset
+        self.ft = font
+
+        # identification for removal and reorganization
+        self.idnum = idnum
+
+        # checkbox object
+        self.checkbox_obj = pygame.Rect(self.x, self.y, 12, 12)
+        self.checkbox_outline = self.checkbox_obj.copy()
+
+        # variables to test the different states of the checkbox
+        self.checked = False
+
+        # total keeps track of the total price
+        self.prices = prices
+        self.total = 0
+
+    def _draw_button_text(self):
+        self.font = pygame.font.SysFont(self.ft, self.fs)
+        self.font_surf = self.font.render(self.caption, True, self.fc)
+        w, h = self.font.size(self.caption)
+        self.font_pos = (self.x + self.to[0], self.y + 12 / 2 - h / 2 +
+                         self.to[1])
+        self.surface.blit(self.font_surf, self.font_pos)
+
+    def render_checkbox(self):
+        if self.checked:
+            pygame.draw.rect(self.surface, self.color, self.checkbox_obj)
+            pygame.draw.rect(self.surface, self.oc, self.checkbox_outline, 1)
+            pygame.draw.circle(self.surface, self.cc, (self.x + 6, self.y + 6), 4)
+
+        elif not self.checked:
+            pygame.draw.rect(self.surface, self.color, self.checkbox_obj)
+            pygame.draw.rect(self.surface, self.oc, self.checkbox_outline, 1)
+        self._draw_button_text()
+
+    def _update(self, event_object):
+        x, y = pygame.mouse.get_pos()
+        px, py, w, h = self.checkbox_obj
+        if px < x < px + w and py < y < py + w:
+            if self.checked:
+                self.checked = False
+                self.total -= self.prices.get(self.idnum + 1, 0)  # subtract prices if unchecked
+            else:
+                self.checked = True
+                self.total += self.prices.get(self.idnum + 1, 0)  # add price if it's checked
+
+    def update_checkbox(self, event_object):
+        if event_object.type == pygame.MOUSEBUTTONDOWN:
+            self.click = True
+            self._update(event_object)
+
+
+def create_checkboxes(surface, prices):
+    buttons = []
+    button_positions = [
+        (50, 200, 'Pepperoni $1.50'),
+        (50, 225, 'Mushrooms $1.00'),
+        (50, 250, 'Onions $2.50'),
+        (50, 275, 'Bell Peppers $1.50'),
+        (50, 300, 'Olives $1.50'),
+        (50, 325, 'Basil $0.50'),
+        (50, 350, 'Oregano $0.25'),
+        (50, 375, 'Garlic $3.00')
+    ]
+
+    for i, (x, y, caption) in enumerate(button_positions):
+        button = Checkbox(surface, x, y, i, prices, caption=caption)
+        buttons.append(button)
+
+    return buttons
+
+
+def draw_total_price(screen, total):
+    font = pygame.font.SysFont('Arial', 25)
+    font.set_bold(True)
+    pygame.draw.rect(screen, "red", (50, 425, 165, 50))
+    text_surface = font.render('Total : $' + str(total), True, 'Black')
+    screen.blit(text_surface, (70, 435))
+
+
+def draw_checkbox_images(screen, circleX, circleY, radius, radius2, button_list):
+    for button in button_list:
+        if button.checked:
+            image = pygame.image.load(button.caption.split()[0] + ".png")
+            image = pygame.transform.scale(image, (50, 50))
+            screen.blit(image, (circleX - 50, circleY - 50))
+
+    pygame.draw.circle(screen, ("Khaki1"), (circleX, circleY), radius)
+    pygame.draw.circle(screen, ('Red'), (circleX, circleY), radius2)
+
+
+def main():
+    # Create the screen
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    # Create two surfaces to split the frame
+    surface1 = pygame.Surface((SCREEN_WIDTH * 0.3, SCREEN_HEIGHT))
+    surface2 = pygame.Surface((SCREEN_WIDTH * 0.7, SCREEN_HEIGHT))
+
+    # Fill the surfaces with different colors
+    surface1.fill((255, 255, 255))
+    surface2.fill((0, 200, 0))
+
+    # Blit the surfaces to the screen
+    screen.blit(surface1, (0, 0))
+    screen.blit(surface2, (SCREEN_WIDTH * 0.3, 0))
+
+    Prices = {1: 1.5, 2: 1, 3: 2.5, 4: 1.5, 5: 1.5, 6: 0.5, 7: 0.25, 8: 3}
+    boxes = create_checkboxes(screen, Prices)
+
+    circleX = 500
+    circleY = 300
+    radius = 150
+    radius2 = 130
+
+    baseprice = 10.00
+
+    # Run the game loop
+    while True:
+
+        # Check for events
+        for event in pygame.event.get():
+            # If the user clicks the any of the checkboxes, highlight that checkbox
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for box in boxes:
+                    box.update_checkbox(event)
+
+            # If the user clicks the close button, quit the game
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        # Calculate total price
+        total = baseprice
+        for box in boxes:
+            total += box.total
+
+        # Draw the frame
+        screen.fill((0, 0, 0))
+        screen.blit(surface1, (0, 0))
+        screen.blit(surface2, (SCREEN_WIDTH * 0.3, 0))
+
+        for box in boxes:
+            box.render_checkbox()
+
+        draw_checkbox_images(screen, circleX, circleY, radius, radius2, boxes)
+
+        draw_total_price(screen, total)
+
+        # Update the display
+        pygame.display.flip()
+
+
+if __name__ == "__main__":
+    main()
+import pygame, sys
+
+# Define the screen size
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
+
+# Initialize Pygame
+pygame.init()
+pygame.font.init()
+
+
+class Checkbox:
+    def __init__(self, surface, x, y, idnum, color=(230, 230, 230),
+                 caption="", outline_color=(0, 0, 0), check_color=(0, 0, 0),
+                 font_size=22, font_color=(0, 0, 0),
+                 text_offset=(28, 1), font='Ariel Black'):
+        self.surface = surface
+        self.x = x
+        self.y = y
+        self.color = color
+        self.caption = caption
+        self.oc = outline_color
+        self.cc = check_color
+        self.fs = font_size
+        self.fc = font_color
+        self.to = text_offset
+        self.ft = font
+
+        # identification for removal and reorginazation
+        self.idnum = idnum
+
+        # checkbox object
+        self.checkbox_obj = pygame.Rect(self.x, self.y, 12, 12)
+        self.checkbox_outline = self.checkbox_obj.copy()
+
+        # variables to test the different states of the checkbox
+        self.checked = False
+
+        # total keeps track of the total price
+        #self.total = Prices[idnum + 1] if idnum in Prices else 0
+        self.total = 0
+
+    def _draw_button_text(self):
+        self.font = pygame.font.SysFont(self.ft, self.fs)
+        self.font_surf = self.font.render(self.caption, True, self.fc)
+        w, h = self.font.size(self.caption)
+        self.font_pos = (self.x + self.to[0], self.y + 12 / 2 - h / 2 +
+                         self.to[1])
+        self.surface.blit(self.font_surf, self.font_pos)
+
+    def render_checkbox(self):
+        if self.checked:
+            pygame.draw.rect(self.surface, self.color, self.checkbox_obj)
+            pygame.draw.rect(self.surface, self.oc, self.checkbox_outline, 1)
+            pygame.draw.circle(self.surface, self.cc, (self.x + 6, self.y + 6), 4)
+
+        elif not self.checked:
+            pygame.draw.rect(self.surface, self.color, self.checkbox_obj)
+            pygame.draw.rect(self.surface, self.oc, self.checkbox_outline, 1)
+        self._draw_button_text()
+
+    def _update(self, event_object):
+        x, y = pygame.mouse.get_pos()
+        px, py, w, h = self.checkbox_obj
+        if px < x < px + w and py < y < py + w:
+            if self.checked:
+                self.checked = False
+                self.total -= Prices.get(self.idnum + 1, 0)  # subract prices if unchecked
+            else:
+                self.checked = True
+                self.total += Prices.get(self.idnum + 1, 0)  # add price if its checked
+
+    def update_checkbox(self, event_object):
+         '''checked = [False, False, False, False, False, False, False, False]
+         total = 10 # initial price of Pizza
+
+         checked = [box.checked for box in boxes] # checking if each box is True or False
+
+         Prices = {1: 1.5, 2: 1, 3: 2.5, 4: 1.5, 5: 1.5, 6: 0.5, 7: 0.25, 8: 3}
+
+         for i in range(8):
+             if checked[i] == True: #making sure to include initial price of the pizze as $$10
+                 topping = Prices.get(i+1)
+                 total += topping'''
+
+         if event_object.type == pygame.MOUSEBUTTONDOWN:
+             self.click = True
+             self._update(event_object)
+
+
+# Create the screen
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+# Create two surfaces to split the frame
+surface1 = pygame.Surface((SCREEN_WIDTH * 0.3, SCREEN_HEIGHT))
+surface2 = pygame.Surface((SCREEN_WIDTH * 0.7, SCREEN_HEIGHT))
+
+# Fill the surfaces with different colors
+surface1.fill((255, 255, 255))
+surface2.fill((0, 200, 0))
+
+# Blit the surfaces to the screen
+screen.blit(surface1, (0, 0))
+screen.blit(surface2, (SCREEN_WIDTH * 0.3, 0))
+
+boxes = []
+
+Prices = {1: 1.5, 2: 1, 3: 2.5, 4: 1.5, 5: 1.5, 6: 0.5, 7: 0.25, 8: 3}
+
+button1 = Checkbox(screen, 50, 200, 0, caption='Pepperoni $1.50')
+button2 = Checkbox(screen, 50, 225, 1, caption='Mushrooms $1.00')
+button3 = Checkbox(screen, 50, 250, 2, caption='Onions $2.50')
+button4 = Checkbox(screen, 50, 275, 3, caption='Bell Peppers $1.50')
+button5 = Checkbox(screen, 50, 300, 4, caption='Olives $1.50')
+button6 = Checkbox(screen, 50, 325, 5, caption='Basil $0.50')
+button7 = Checkbox(screen, 50, 350, 6, caption='Oregano $0.25')
+button8 = Checkbox(screen, 50, 375, 7, caption='Garlic $3.00')
+
+boxes.append(button1)
+boxes.append(button2)
+boxes.append(button3)
+boxes.append(button4)
+boxes.append(button5)
+boxes.append(button6)
+boxes.append(button7)
+boxes.append(button8)
+
+circleX = 500
+circleY = 300
+radius = 150
+Khaki = ("Khaki1")
+
+radius2 = 130
+Red = ('Red')
+
+# Update the display
+pygame.display.flip()
+
+baseprice = 10.00
+
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for box in boxes:
+                box.update_checkbox(event)
+
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+    total = baseprice
+    for box in boxes:
+        total += box.total
+
+
+    # Draw the frame
+    screen.fill((0, 0, 0))
+    screen.blit(surface1, (0, 0))
+    screen.blit(surface2, (SCREEN_WIDTH * 0.3, 0))
+
+    for box in boxes:
+        box.render_checkbox()
+
+    pygame.draw.circle(screen, Khaki, (circleX, circleY), radius)  # DRAW CIRCLE
+    # Load the background image
+    Pepperoni = pygame.image.load("Pepperoni.png")
+    Mushrooms = pygame.image.load("Mushrooms.png")
+    Onion = pygame.image.load("Onions.png")
+    Bell_Peppers = pygame.image.load("Bell.png")
+    Olives = pygame.image.load("Olives.png")
+    Basil = pygame.image.load("Basil.png")
+    Oregano = pygame.image.load("Oregano.png")
+    Garlic = pygame.image.load("Garlic.png")
+
+
+    #resize the images to fit
+    Pepperoni = pygame.transform.scale(Pepperoni, (50, 50))
+    Mushrooms = pygame.transform.scale(Mushrooms, (50, 50))
+    Onion = pygame.transform.scale(Onion, (50,50))
+    Bell_Peppers = pygame.transform.scale(Bell_Peppers, (50,50))
+    Olives = pygame.transform.scale(Olives, (50,50))
+    Basil = pygame.transform.scale(Basil, (50,50))
+    Oregano = pygame.transform.scale(Oregano, (50,50))
+    Garlic = pygame.transform.scale(Garlic, (50,50))
+
+
+    # Blit the background image to the screen
+    #screen.blit(background_image, (0, 0))
+    pygame.draw.circle(screen, Red, (circleX, circleY), radius2)
+
+    font = pygame.font.SysFont('Arial', 25)
+    font.set_bold(True)
+    pygame.draw.rect(screen, "red", (50, 425, 165, 50))
+    # have to display total now
+    text_surface = font.render('Total : $' + str(total), True, 'Black')
+    screen.blit(text_surface, (70, 435))
+
+    if button1.checked:
+        screen.blit(Pepperoni, (circleX - 50, circleY - 50))
+
+    if button2.checked:
+        screen.blit(Mushrooms, (circleX - 0, circleY - 50))
+
+    if button3.checked:
+        screen.blit(Onion, (circleX - 100, circleY - 50))
+
+    if button4.checked:
+        screen.blit(Bell_Peppers, (circleX - 50, circleY - 0))
+
+    if button5.checked:
+        screen.blit(Olives, (circleX - 50, circleY - 100))
+
+    if button6.checked:
+        screen.blit(Basil, (circleX - 0, circleY - 0))
+
+    if button7.checked:
+        screen.blit(Oregano, (circleX - 100, circleY - 100))
+
+    if button8.checked:
+        screen.blit(Garlic, (circleX - 0, circleY - 100))
+
+    # Update the display
+    pygame.display.flip()
+
+
